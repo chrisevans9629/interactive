@@ -8,16 +8,19 @@ namespace Microsoft.DotNet.Interactive.SqlServer;
 
 internal class MsSqlKernelConnector
 {
-    public MsSqlKernelConnector(bool createDbContext, string connectionString)
+    public MsSqlKernelConnector(bool createDbContext, string connectionString, string[] tables)
     {
         CreateDbContext = createDbContext;
         ConnectionString = connectionString;
+        Tables = tables;
     }
 
     public bool CreateDbContext { get; }
 
     public string ConnectionString { get; }
 
+    public string[] Tables { get; }
+    
     public string PathToService { get; set; }
 
     public async Task<Kernel> CreateKernelAsync(string kernelName)

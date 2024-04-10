@@ -23,11 +23,15 @@ public class ConnectMsSqlCommand : ConnectKernelCommand
         ResolvedToolsServicePath = resolvedToolsServicePath;
         Add(ConnectionStringArgument);
         Add(CreateDbContextOption);
+        Add(DbContextTables);
     }
 
     private static Option<bool> CreateDbContextOption { get; } =
         new("--create-dbcontext",
             "Scaffold a DbContext in the C# kernel.");
+
+    private static Option<string[]> DbContextTables { get; } = new("--tables",
+                   "The tables to scaffold in the DbContext.");
 
     private Argument<MsSqlConnectionString> ConnectionStringArgument { get; } =
         new("connectionString",
@@ -40,7 +44,8 @@ public class ConnectMsSqlCommand : ConnectKernelCommand
     {
         var connector = new MsSqlKernelConnector(
             commandLineContext.ParseResult.GetValueForOption(CreateDbContextOption),
-            commandLineContext.ParseResult.GetValueForArgument(ConnectionStringArgument).Value);
+            commandLineContext.ParseResult.GetValueForArgument(ConnectionStringArgument).Value,
+            commandLineContext.ParseResult.GetValueForOption(DbContextTables));
         connector.PathToService = ResolvedToolsServicePath;
 
         var localName = commandLineContext.ParseResult.GetValueForOption(KernelNameOption);
@@ -82,6 +87,13 @@ public class ConnectMsSqlCommand : ConnectKernelCommand
 
         context.DisplayAs($"Scaffolding a `DbContext` and initializing an instance of it called `{kernelName}` in the C# kernel.", "text/markdown");
 
+        var tables = "";
+
+        if(options.Tables.Length > 0)
+        {
+            tables = $"new []{{\"{string.Join("\", \"", options.Tables)}\"}}";
+        }
+
         var submission1 = @$"  
 #r ""nuget: Microsoft.Data.SqlClient, 5.1.5""
 #r ""nuget: Microsoft.EntityFrameworkCore.Design, 7.0.13""
@@ -110,7 +122,7 @@ var scaffolder = serviceProvider.GetService<IReverseEngineerScaffolder>();
 
 var model = scaffolder.ScaffoldModel(
     @""{options.ConnectionString}"",
-    new DatabaseModelFactoryOptions(),
+    new DatabaseModelFactoryOptions({tables}),
     new ModelReverseEngineerOptions(),
     new ModelCodeGenerationOptions()
     {{
